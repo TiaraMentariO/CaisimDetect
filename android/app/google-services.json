@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "70979850027",
+    "project_id": "deteksihama-5dd3d",
+    "storage_bucket": "deteksihama-5dd3d.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:70979850027:android:eac80e3bcf616fe1a97f6e",
+        "android_client_info": {
+          "package_name": "com.example.tugasakhirsawihijau"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDrk5QssOXVrZg_N1L0cD8pvZef69689u4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
