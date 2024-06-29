@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:tflite_v2/tflite_v2.dart';
-import 'package:tugasakhirsawihijau/data/database_helper.dart';
-import 'dataSawi.dart';
+import 'dataSawi.dart'; // Sesuaikan dengan lokasi file jika berbeda
+import 'package:tugasakhirsawihijau/data/database_helper.dart'; // Sesuaikan dengan lokasi file jika berbeda
 
 class Result {
-  // menyimpan hasil prediksi
   final String label;
   final String latinName;
   final double confidence;
@@ -38,14 +38,14 @@ class _DeteksiViewState extends State<DeteksiView> {
   CameraController? _cameraController;
   String _lastImagePath = '';
   Result? _result;
-  DataSawi _dataSawi = DataSawi();
+  late DataSawi _dataSawi; // Perubahan di sini untuk late initialization
 
   @override
   void initState() {
-    // kamera diinisialisasi dan model TFLite dimuat
     super.initState();
     initCamera();
     loadModel();
+    _dataSawi = DataSawi(); // Inisialisasi setelah initState
   }
 
   Future<void> initCamera() async {
@@ -56,7 +56,6 @@ class _DeteksiViewState extends State<DeteksiView> {
   }
 
   Future<void> loadModel() async {
-    // Memuat model pembelajaran mesin
     try {
       await Tflite.loadModel(
         model: 'assets/model/model.tflite',
@@ -68,7 +67,6 @@ class _DeteksiViewState extends State<DeteksiView> {
   }
 
   Future<Result?> predictUsingTFLite(String imagePath) async {
-    // model TFLite untuk memprediksi jenis hama
     try {
       final List<dynamic>? dynamicResults = await Tflite.runModelOnImage(
         path: imagePath,
@@ -81,19 +79,31 @@ class _DeteksiViewState extends State<DeteksiView> {
       if (dynamicResults != null && dynamicResults.isNotEmpty) {
         final int predictionIndex = dynamicResults[0]['index'] as int;
         final String label = dynamicResults[0]['label'] as String;
-        final String latinName =
-            _dataSawi.treatment[predictionIndex]['latinName'] ?? '';
         final double confidence = dynamicResults[0]['confidence'] as double;
-        final Result result = Result(
-          label: label,
-          latinName: latinName,
-          confidence: confidence,
-          description:
-              _dataSawi.treatment[predictionIndex]['characteristics'] ?? '',
-          handling: _dataSawi.treatment[predictionIndex]['handling'] ?? '',
-          imagePath: imagePath,
-        );
-        return result;
+
+        // Check if the predictionIndex is valid
+        if (predictionIndex < _dataSawi.treatment.length) {
+          final String latinName =
+              _dataSawi.treatment[predictionIndex]['latinName'] ?? '';
+          return Result(
+            label: label,
+            latinName: latinName,
+            confidence: confidence,
+            description:
+                _dataSawi.treatment[predictionIndex]['characteristics'] ?? '',
+            handling: _dataSawi.treatment[predictionIndex]['handling'] ?? '',
+            imagePath: imagePath,
+          );
+        } else {
+          return Result(
+            label: 'Tidak Diketahui',
+            latinName: 'Tidak Diketahui',
+            confidence: confidence,
+            description: '',
+            handling: '',
+            imagePath: imagePath,
+          );
+        }
       }
     } catch (e) {
       print("Error: $e");
@@ -102,7 +112,6 @@ class _DeteksiViewState extends State<DeteksiView> {
   }
 
   Future<void> takePictureAndPredict() async {
-    // mengambil gmbr dgn kamera, memprediksi hama, & menyimpan hasil ke database
     if (!_cameraController!.value.isTakingPicture) {
       await _cameraController?.setFlashMode(FlashMode.off);
       final XFile? image = await _cameraController!.takePicture();
@@ -115,7 +124,6 @@ class _DeteksiViewState extends State<DeteksiView> {
           _result = result;
         });
 
-        // Simpan hasil prediksi ke database SQLite
         await DatabaseHelper().insertData('PrediksiHama', {
           'jenis_hama': result.label,
           'nama_latin': result.latinName,
@@ -129,7 +137,6 @@ class _DeteksiViewState extends State<DeteksiView> {
   }
 
   Future<void> _getImageFromGallery() async {
-    // mengambil gmbr dri galeri, memprediksi hama, & menyimpan hasil ke database.
     final XFile? pickedFile =
         await _picker.pickImage(source: ImageSource.gallery);
 
@@ -143,7 +150,6 @@ class _DeteksiViewState extends State<DeteksiView> {
           _result = result;
         });
 
-        // Simpan hasil prediksi ke database SQLite
         await DatabaseHelper().insertData('PrediksiHama', {
           'jenis_hama': result.label,
           'nama_latin': result.latinName,
@@ -164,7 +170,8 @@ class _DeteksiViewState extends State<DeteksiView> {
 
   @override
   Widget build(BuildContext context) {
-    // membangun UI, kamera, tombol utk ambil gmbr dri kamera/galeri, & menampilkan hasil prediksi.
+    bool isUnknown = _result?.latinName == 'Tidak Diketahui';
+
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -260,93 +267,121 @@ class _DeteksiViewState extends State<DeteksiView> {
                                                 fontFamily: "Yeseva",
                                                 fontSize: 18,
                                                 fontWeight: FontWeight.normal,
-                                                color: _result != null
-                                                    ? _result!.label ==
-                                                            'Tanpa Hama'
+                                                color: _result != null &&
+                                                        _result!.latinName ==
+                                                            'Tidak Diketahui'
+                                                    ? Colors
+                                                        .black // Change to black for unknown results
+                                                    : _result != null &&
+                                                            _result!.label ==
+                                                                'Tanpa Hama'
                                                         ? Colors.green
-                                                        : Colors.red
-                                                    : Colors.black,
+                                                        : Colors.red,
                                               ),
                                             ),
                                           ),
-                                          SizedBox(height: 5),
-                                          Center(
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                if (_result!.label ==
-                                                    'Kumbang Daun')
+                                          if (isUnknown) ...[
+                                            SizedBox(height: 5),
+                                            Center(
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
                                                   Image.asset(
-                                                      'assets/images/icon_kumbang.png',
+                                                      'assets/images/icon_persentase.png',
                                                       width: 35,
                                                       height: 35),
-                                                if (_result!.label ==
-                                                    'Ulat Krop Kubis')
-                                                  Image.asset(
-                                                      'assets/images/icon_ulat_krop.png',
-                                                      width: 35,
-                                                      height: 35),
-                                                if (_result!.label ==
-                                                    'Ulat Perusak Daun')
-                                                  Image.asset(
-                                                      'assets/images/icon_ulat_daun.png',
-                                                      width: 35,
-                                                      height: 35),
-                                                if (_result!.label ==
-                                                    'Tanpa Hama')
-                                                  Image.asset(
-                                                      'assets/images/icon_tanpa_hama.png',
-                                                      width: 35,
-                                                      height: 35),
-                                                SizedBox(width: 5),
-                                                Text(
-                                                  "${_result!.latinName}",
-                                                  style: TextStyle(
-                                                    fontFamily: "InterMedium",
-                                                    fontSize: 18,
-                                                    fontStyle: FontStyle.italic,
-                                                    color: Colors.black,
+                                                  SizedBox(width: 5),
+                                                  Text(
+                                                    "${(_result!.confidence * 100).toStringAsFixed(2)}%",
+                                                    style: TextStyle(
+                                                      fontFamily: "InterMedium",
+                                                      fontSize: 18,
+                                                      color: Colors.black,
+                                                    ),
                                                   ),
-                                                ),
-                                              ],
+                                                ],
+                                              ),
                                             ),
-                                          ),
-                                          SizedBox(height: 5),
-                                          Center(
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                Image.asset(
-                                                    'assets/images/icon_persentase.png',
-                                                    width: 35,
-                                                    height: 35),
-                                                SizedBox(width: 5),
-                                                Text(
-                                                  "${(_result!.confidence * 100).toStringAsFixed(2)}%",
-                                                  style: TextStyle(
-                                                    fontFamily: "InterMedium",
-                                                    fontSize: 18,
-                                                    color: Colors.black,
+                                          ],
+                                          if (!isUnknown) ...[
+                                            SizedBox(height: 5),
+                                            Center(
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  if (_result!.label ==
+                                                      'Kumbang Daun')
+                                                    Image.asset(
+                                                        'assets/images/icon_kumbang.png',
+                                                        width: 35,
+                                                        height: 35),
+                                                  if (_result!.label ==
+                                                      'Ulat Krop Kubis')
+                                                    Image.asset(
+                                                        'assets/images/icon_ulat_krop.png',
+                                                        width: 35,
+                                                        height: 35),
+                                                  if (_result!.label ==
+                                                      'Ulat Perusak Daun')
+                                                    Image.asset(
+                                                        'assets/images/icon_ulat_daun.png',
+                                                        width: 35,
+                                                        height: 35),
+                                                  if (_result!.label ==
+                                                      'Tanpa Hama')
+                                                    Image.asset(
+                                                        'assets/images/icon_tanpa_hama.png',
+                                                        width: 35,
+                                                        height: 35),
+                                                  SizedBox(width: 5),
+                                                  Text(
+                                                    "${_result?.latinName}",
+                                                    style: TextStyle(
+                                                      fontFamily: "InterMedium",
+                                                      fontSize: 18,
+                                                      fontStyle:
+                                                          FontStyle.italic,
+                                                      color: Colors.black,
+                                                    ),
                                                   ),
-                                                ),
-                                              ],
+                                                ],
+                                              ),
                                             ),
-                                          ),
-                                          SizedBox(height: 10),
-                                          Padding(
-                                            padding:
-                                                const EdgeInsets.only(left: 10),
-                                            child: Column(
+                                            SizedBox(height: 5),
+                                            Center(
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Image.asset(
+                                                      'assets/images/icon_persentase.png',
+                                                      width: 35,
+                                                      height: 35),
+                                                  SizedBox(width: 5),
+                                                  Text(
+                                                    "${(_result!.confidence * 100).toStringAsFixed(2)}%",
+                                                    style: TextStyle(
+                                                      fontFamily: "InterMedium",
+                                                      fontSize: 18,
+                                                      color: Colors.black,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            SizedBox(height: 10),
+                                            Column(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.start,
                                               children: [
+                                                SizedBox(height: 10),
                                                 Text(
                                                   "Ciri - Ciri :",
                                                   style: TextStyle(
                                                     fontFamily: "InterMedium",
-                                                    fontSize: 18,
+                                                    fontSize: 20,
                                                     fontWeight: FontWeight.bold,
                                                     color: Colors.black,
                                                   ),
@@ -357,53 +392,47 @@ class _DeteksiViewState extends State<DeteksiView> {
                                                       CrossAxisAlignment.start,
                                                   children: _result!.description
                                                       .split('\n')
-                                                      .map((String item) {
-                                                    return Row(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        Text(
-                                                          "• ",
-                                                          style: TextStyle(
-                                                            fontSize: 16,
-                                                            color: Colors.black,
-                                                          ),
-                                                        ),
-                                                        Expanded(
-                                                          child: Text(
-                                                            item.trim(),
-                                                            textAlign: TextAlign
-                                                                .justify,
-                                                            style: TextStyle(
-                                                              fontFamily:
-                                                                  "Ruda",
-                                                              fontSize: 16,
-                                                              color:
-                                                                  Colors.black,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    );
-                                                  }).toList(),
+                                                      .map((String item) => Row(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            children: [
+                                                              Text(
+                                                                "• ",
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontSize: 16,
+                                                                  color: Colors
+                                                                      .black,
+                                                                ),
+                                                              ),
+                                                              Expanded(
+                                                                child: Text(
+                                                                  item,
+                                                                  textAlign:
+                                                                      TextAlign
+                                                                          .justify,
+                                                                  style:
+                                                                      TextStyle(
+                                                                    fontFamily:
+                                                                        "Ruda",
+                                                                    fontSize:
+                                                                        18,
+                                                                    color: Colors
+                                                                        .black,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ))
+                                                      .toList(),
                                                 ),
-                                              ],
-                                            ),
-                                          ),
-                                          SizedBox(height: 10),
-                                          Padding(
-                                            padding:
-                                                const EdgeInsets.only(left: 10),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
+                                                SizedBox(height: 20),
                                                 Text(
                                                   "Cara Penanganan :",
                                                   style: TextStyle(
                                                     fontFamily: "InterMedium",
-                                                    fontSize: 18,
+                                                    fontSize: 20,
                                                     fontWeight: FontWeight.bold,
                                                     color: Colors.black,
                                                   ),
@@ -414,42 +443,47 @@ class _DeteksiViewState extends State<DeteksiView> {
                                                       CrossAxisAlignment.start,
                                                   children: _result!.handling
                                                       .split('\n')
-                                                      .where((String item) =>
-                                                          item.isNotEmpty)
-                                                      .map((String item) {
-                                                    return Row(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        Text(
-                                                          "• ",
-                                                          style: TextStyle(
-                                                            fontSize: 16,
-                                                            color: Colors.black,
-                                                          ),
-                                                        ),
-                                                        Expanded(
-                                                          child: Text(
-                                                            item.trim(),
-                                                            textAlign: TextAlign
-                                                                .justify,
-                                                            style: TextStyle(
-                                                              fontFamily:
-                                                                  "Ruda",
-                                                              fontSize: 16,
-                                                              color:
-                                                                  Colors.black,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    );
-                                                  }).toList(),
+                                                      .where((item) => item
+                                                          .isNotEmpty) // Filter item yang tidak kosong
+                                                      .map((String item) => Row(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            children: [
+                                                              Text(
+                                                                "• ",
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontSize: 16,
+                                                                  color: Colors
+                                                                      .black,
+                                                                ),
+                                                              ),
+                                                              Expanded(
+                                                                child: Text(
+                                                                  item,
+                                                                  textAlign:
+                                                                      TextAlign
+                                                                          .justify,
+                                                                  style:
+                                                                      TextStyle(
+                                                                    fontFamily:
+                                                                        "Ruda",
+                                                                    fontSize:
+                                                                        18,
+                                                                    color: Colors
+                                                                        .black,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ))
+                                                      .toList(),
                                                 ),
+                                                SizedBox(height: 10),
                                               ],
                                             ),
-                                          ),
+                                          ],
                                         ],
                                       ),
                                     )

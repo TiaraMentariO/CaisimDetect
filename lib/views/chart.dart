@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:tugasakhirsawihijau/data/database_helper.dart';
 import 'package:intl/intl.dart';
-import 'package:image_picker/image_picker.dart';
 
 class Chart extends StatefulWidget {
   @override
@@ -23,11 +22,9 @@ class _ChartState extends State<Chart> {
 
   Future<void> _fetchData() async {
     if (startDate != null && endDate != null) {
-      print('Fetching data from $startDate to $endDate');
       DateTime effectiveEndDate = endDate!.add(Duration(days: 1));
       final data = await DatabaseHelper()
           .getDetectionCountsByJenisHamaInRange(startDate!, effectiveEndDate);
-      print('Data fetched: $data'); // Debug print
       setState(() {
         predictionData = data;
       });
@@ -152,6 +149,10 @@ class _ChartState extends State<Chart> {
                   LegendItem(color: Colors.blue, text: 'Kumbang Daun'),
                   LegendItem(color: Colors.red, text: 'Ulat Krop Kubis'),
                   LegendItem(color: Colors.orange, text: 'Ulat Perusak Daun'),
+                  LegendItem(
+                      color: Colors.grey,
+                      text:
+                          'Tidak Diketahui'), // Added legend item for "Tidak Diketahui"
                 ],
               ),
             ),
@@ -217,8 +218,10 @@ class PieChartWidget extends StatelessWidget {
         return Colors.blue;
       case 'Ulat Krop Kubis':
         return Colors.red;
+      case 'Ulat Perusak Daun':
+        return Colors.orange; // Color for "Tidak Diketahui"
       default:
-        return Colors.orange;
+        return Colors.grey;
     }
   }
 }

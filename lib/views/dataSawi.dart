@@ -76,7 +76,7 @@ class DataSawi {
           'Campur putung rokok dengan air dalam wadah dan biarkan merendam selama beberapa jam atau semalam\n'
           'Setelah itu, saring larutan menggunakan kain kasa atau saringan untuk memisahkan serat-serat kasar dari larutan\n'
           'Siapkan sabun cair atau sabun potong yang tidak mengandung bahan kimia tambahan seperti pewangi atau pelembut pakaian\n'
-          'Larutkan sabun dalm air dalam wadah terpisah\n'
+          'Larutkan sabun dalam air dalam wadah terpisah\n'
           'Campurkan larutan putung rokok dan larutan sabun dalam proporsi yang sesuai\n'
           'Tuangkan larutan campuran putung rokok dan sabun ke dalam botol semprot\n'
           'Semprotkan larutan secara merata ke seluruh bagian tanaman sawi hijau termasuk bagian atas dan bawah daun serta batang tanaman\n'

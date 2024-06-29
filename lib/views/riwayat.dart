@@ -40,6 +40,8 @@ class _RiwayatState extends State<Riwayat> {
     String? exifDate =
         data['path'] != null ? await _getExifDate(data['path']) : null;
 
+    bool isUnknownPest = data['jenis_hama'] == 'Tidak Diketahui';
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -71,50 +73,58 @@ class _RiwayatState extends State<Riwayat> {
                   fit: BoxFit.cover,
                 ),
               SizedBox(height: 10),
-              RichText(
-                textAlign: TextAlign.justify,
-                text: TextSpan(
-                  text: "Nama Latin : ",
-                  style: TextStyle(
-                    fontStyle: FontStyle.normal,
-                    fontSize: 12,
-                    color: Colors.black,
-                  ),
-                  children: [
-                    TextSpan(
-                      text: data['nama_latin'] ?? '',
-                      style: TextStyle(
-                        fontStyle: FontStyle.italic,
-                        fontSize: 12,
-                      ),
+              if (!isUnknownPest && (data['nama_latin']?.isNotEmpty ?? false))
+                RichText(
+                  textAlign: TextAlign.justify,
+                  text: TextSpan(
+                    text: "Nama Latin : ",
+                    style: TextStyle(
+                      fontStyle: FontStyle.normal,
+                      fontSize: 12,
+                      color: Colors.black,
                     ),
-                  ],
+                    children: [
+                      TextSpan(
+                        text: data['nama_latin'] ?? '',
+                        style: TextStyle(
+                          fontStyle: FontStyle.italic,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              SizedBox(height: 2),
               Text(
                 "Persentase : ${data['persentase']?.toStringAsFixed(2) ?? '0.00'}%",
                 textAlign: TextAlign.justify,
               ),
-              SizedBox(height: 10),
-              Text(
-                "Ciri - Ciri :",
-                textAlign: TextAlign.justify,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+              if (!isUnknownPest &&
+                  (data['ciri_ciri']?.isNotEmpty ?? false)) ...[
+                SizedBox(height: 10),
+                Text(
+                  "Ciri - Ciri :",
+                  textAlign: TextAlign.justify,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
                 ),
-              ),
-              ..._buildBulletPoints(data['ciri_ciri'] ?? ''),
-              SizedBox(height: 10),
-              Text(
-                "Cara Penanganan :",
-                textAlign: TextAlign.justify,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                ..._buildBulletPoints(data['ciri_ciri'] ?? ''),
+              ],
+              if (!isUnknownPest &&
+                  (data['cara_penanganan']?.isNotEmpty ?? false)) ...[
+                SizedBox(height: 10),
+                Text(
+                  "Cara Penanganan :",
+                  textAlign: TextAlign.justify,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
                 ),
-              ),
-              ..._buildBulletPoints(data['cara_penanganan'] ?? '', true),
+                ..._buildBulletPoints(data['cara_penanganan'] ?? '', true),
+              ],
             ],
           ),
         ),
@@ -183,74 +193,126 @@ class _RiwayatState extends State<Riwayat> {
                   shrinkWrap: true,
                   physics: NeverScrollableScrollPhysics(),
                   itemCount: myData.length,
-                  itemBuilder: (context, index) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 0),
-                    child: Card(
-                      color: index % 2 == 0 ? Colors.green : Colors.green[200],
-                      margin: const EdgeInsets.all(15),
-                      child: ListTile(
-                        leading: SizedBox(
-                          width: 50,
-                          child: myData[index]['path'] != null
-                              ? Image.file(
-                                  File(myData[index]['path']),
-                                  width: 50,
-                                  height: 50,
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
-                        ),
-                        title: Text(myData[index]['jenis_hama'] ?? ''),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              myData[index]['nama_latin'] ?? '',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontStyle: FontStyle.italic,
-                                fontSize: 14,
-                              ),
-                            ),
-                            Text(
-                              'Persentase : ${myData[index]['persentase']?.toStringAsFixed(2) ?? '0.00'}%',
-                              style: TextStyle(color: Colors.black),
-                            ),
-                            FutureBuilder(
-                              future: myData[index]['path'] != null
-                                  ? _getExifDate(myData[index]['path'])
-                                  : Future.value(null),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return Text(
-                                    "Tanggal : Memuat...",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.black,
+                  itemBuilder: (context, index) {
+                    bool isUnknownPest =
+                        myData[index]['jenis_hama'] == 'Tidak Diketahui';
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 0),
+                      child: Card(
+                        color:
+                            index % 2 == 0 ? Colors.green : Colors.green[200],
+                        margin: const EdgeInsets.all(15),
+                        child: ListTile(
+                          leading: SizedBox(
+                            width: 50,
+                            child: myData[index]['path'] != null
+                                ? Image.file(
+                                    File(myData[index]['path']),
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                          title: Text(myData[index]['jenis_hama'] ?? ''),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (isUnknownPest)
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Persentase : ${myData[index]['persentase']?.toStringAsFixed(2) ?? '0.00'}%',
+                                      style: TextStyle(color: Colors.black),
                                     ),
-                                  );
-                                }
-                                if (snapshot.hasData && snapshot.data != null) {
-                                  return Text(
-                                    "Tanggal : ${snapshot.data}",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.black,
+                                    FutureBuilder(
+                                      future: myData[index]['path'] != null
+                                          ? _getExifDate(myData[index]['path'])
+                                          : Future.value(null),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.connectionState ==
+                                            ConnectionState.waiting) {
+                                          return Text(
+                                            "Tanggal : Memuat...",
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.black,
+                                            ),
+                                          );
+                                        }
+                                        if (snapshot.hasData &&
+                                            snapshot.data != null) {
+                                          return Text(
+                                            "Tanggal : ${snapshot.data}",
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.black,
+                                            ),
+                                          );
+                                        } else {
+                                          return SizedBox
+                                              .shrink(); // Hide if no date available
+                                        }
+                                      },
                                     ),
-                                  );
-                                } else {
-                                  return SizedBox
-                                      .shrink(); // Hide if no date available
-                                }
-                              },
-                            ),
-                          ],
+                                  ],
+                                ),
+                              if (!isUnknownPest)
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      myData[index]['nama_latin'] ?? '',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontStyle: FontStyle.italic,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Persentase : ${myData[index]['persentase']?.toStringAsFixed(2) ?? '0.00'}%',
+                                      style: TextStyle(color: Colors.black),
+                                    ),
+                                    FutureBuilder(
+                                      future: myData[index]['path'] != null
+                                          ? _getExifDate(myData[index]['path'])
+                                          : Future.value(null),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.connectionState ==
+                                            ConnectionState.waiting) {
+                                          return Text(
+                                            "Tanggal : Memuat...",
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.black,
+                                            ),
+                                          );
+                                        }
+                                        if (snapshot.hasData &&
+                                            snapshot.data != null) {
+                                          return Text(
+                                            "Tanggal : ${snapshot.data}",
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.black,
+                                            ),
+                                          );
+                                        } else {
+                                          return SizedBox
+                                              .shrink(); // Hide if no date available
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          ),
+                          onTap: () => showDetail(myData[index]),
                         ),
-                        onTap: () => showDetail(myData[index]),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
             ],
