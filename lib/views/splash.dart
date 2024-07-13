@@ -16,33 +16,17 @@ class _SplashState extends State<Splash> {
   }
 
   _navigatetodashboard() async {
-    await Future.delayed(Duration(milliseconds: 2000), () {});
+    await Future.delayed(const Duration(milliseconds: 2000));
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => DashboardView()),
+      MaterialPageRoute(builder: (context) => const DashboardView()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              height: 100,
-              width: 100,
-              color: Colors.blue,
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Splash Screen',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-      ),
+    return const Scaffold(
+      body: SizedBox.shrink(), // Blank screen
     );
   }
 }
